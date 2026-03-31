@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
+  <title>Suggest someone - Germans in the Valley</title>
+  <meta name="description" content="Suggest a German in the Bay Area to be listed">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: #000;
+      background: #fff;
+    }
+    main {
+      max-width: 650px;
+      margin: 0 auto;
+      padding: 64px 20px;
+    }
+    h1 { font-size: 1.5rem; font-weight: bold; margin-bottom: 16px; }
+    a { color: #0000f0; }
+    a:visited { color: #0000f0; }
+    .back { margin-bottom: 24px; }
+    .intro { margin-bottom: 24px; }
+    form { display: flex; flex-direction: column; gap: 16px; }
+    label { display: block; margin-bottom: 4px; }
+    input {
+      width: 100%;
+      border: 1px solid #000;
+      background: #fff;
+      padding: 4px 8px;
+      font-family: inherit;
+      font-size: inherit;
+    }
+    button {
+      align-self: flex-start;
+      border: 1px solid #000;
+      background: #fff;
+      color: #000;
+      padding: 4px 16px;
+      font-family: inherit;
+      font-size: inherit;
+      cursor: pointer;
+    }
+    button:hover { background: #000; color: #fff; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    button:disabled:hover { background: #fff; color: #000; }
+    .thanks { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="back"><a href="index.html">&larr; Back to the list</a></p>
+    <h1>Suggest someone</h1>
+    <p class="intro">Know a German in the Bay Area who should be listed here?</p>
+
+    <div id="thanks" style="display:none">
+      <p class="thanks">Thanks for the suggestion!</p>
+    </div>
+
+    <form id="suggest-form">
+      <div>
+        <label for="name">Name *</label>
+        <input id="name" type="text" required>
+      </div>
+      <div>
+        <label for="link">Link to LinkedIn / Twitter / Website (optional)</label>
+        <input id="link" type="text">
+      </div>
+      <div>
+        <label for="desc">One-sentence description *</label>
+        <input id="desc" type="text" required>
+      </div>
+      <div>
+        <label for="email">Your email (optional)</label>
+        <input id="email" type="email">
+      </div>
+      <button type="submit" id="submit-btn">Submit</button>
+    </form>
+  </main>
+
+  <script>
+    const API_URL = 'https://germans-api.hainzljoel.workers.dev';
+
+    const form = document.getElementById('suggest-form');
+    const btn = document.getElementById('submit-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      btn.textContent = 'Submitting\u2026';
+
+      try {
+        const res = await fetch(API_URL + '/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: document.getElementById('name').value.trim(),
+            link: document.getElementById('link').value.trim() || null,
+            description: document.getElementById('desc').value.trim(),
+            submitter_email: document.getElementById('email').value.trim() || null,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          form.style.display = 'none';
+          document.getElementById('thanks').style.display = 'block';
+        } else {
+          throw new Error(data.error || 'Unknown error');
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Submit';
+        alert('Something went wrong. Please try again.');
+      }
+    });
+  </script>
+</body>
+</html>

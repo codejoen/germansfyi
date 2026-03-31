@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Germans in the Valley</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #1a1a1a;
+      background: #f5f5f5;
+      padding: 16px 24px;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 4px; }
+    h2 { font-size: 1.1rem; margin: 12px 0 6px; border-bottom: 2px solid #000; padding-bottom: 2px; }
+    .top-bar {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    button {
+      border: 1px solid #333;
+      background: #fff;
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover { background: #000; color: #fff; }
+    button.deploy { background: #22c55e; color: #fff; border-color: #22c55e; font-weight: 600; }
+    button.deploy:hover { background: #16a34a; }
+    button.danger { border-color: #cc0000; color: #cc0000; }
+    button.danger:hover { background: #cc0000; color: #fff; }
+    button.small { padding: 3px 8px; font-size: 12px; }
+    button.link-btn { background: #0066ff; color: #fff; border-color: #0066ff; padding: 3px 10px; font-size: 12px; }
+    button.link-btn:hover { background: #0044cc; }
+    button.unlink-btn { background: #ff6600; color: #fff; border-color: #ff6600; padding: 3px 10px; font-size: 12px; }
+    button.unlink-btn:hover { background: #cc5200; }
+    #deploy-status { font-size: 13px; padding: 6px 12px; border-radius: 4px; display: none; }
+    #deploy-status.success { display: inline-block; background: #dcfce7; color: #166534; }
+    #deploy-status.info { display: inline-block; background: #dbeafe; color: #1e40af; }
+    #deploy-status.error { display: inline-block; background: #fee2e2; color: #991b1b; }
+    .count { color: #888; font-weight: normal; font-size: 0.85em; }
+
+    /* People list */
+    #people-list { list-style: none; }
+    #people-list li {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 3px;
+      padding: 2px 8px;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #people-list li:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    #people-list li.dragging { opacity: 0.4; }
+    #people-list li.drag-over { border-top: 3px solid #0066ff; margin-top: -3px; }
+    .person-number {
+      font-size: 13px;
+      font-weight: 700;
+      color: #999;
+      min-width: 22px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .drag-handle {
+      cursor: grab;
+      font-size: 15px;
+      color: #bbb;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .drag-handle:hover { color: #666; }
+    .drag-handle:active { cursor: grabbing; }
+    .person-content {
+      flex: 1;
+      min-width: 0;
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      font-size: 13px;
+      line-height: 1.4;
+      outline: none;
+      padding: 1px 3px;
+      border-radius: 3px;
+      border: 1px solid transparent;
+    }
+    .person-content:focus {
+      border-color: #0066ff;
+      background: #f8faff;
+    }
+    .person-content a {
+      color: #0000f0;
+      text-decoration: underline;
+    }
+    .person-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+    /* Section headers in admin list */
+    #people-list li.section-header {
+      background: #1a1a1a;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      padding: 4px 10px;
+      margin-top: 8px;
+      border-color: #1a1a1a;
+    }
+    #people-list li.section-header:first-child { margin-top: 0; }
+    #people-list li.section-header .section-label { flex: 1; }
+    #people-list li.section-header .person-number,
+    #people-list li.section-header .drag-handle { color: #888; }
+
+    /* Link toolbar */
+    .link-toolbar {
+      display: none;
+      position: fixed;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 6px 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 100;
+      gap: 6px;
+      align-items: center;
+    }
+    .link-toolbar.visible { display: flex; }
+    .link-toolbar input {
+      border: 1px solid #ccc;
+      padding: 3px 8px;
+      font-size: 12px;
+      border-radius: 3px;
+      width: 240px;
+    }
+
+    /* Add new row */
+    #add-row {
+      display: flex; gap: 8px; align-items: center;
+    }
+    #add-row input {
+      flex: 1;
+      border: 1px solid #ccc;
+      padding: 5px 10px;
+      font-size: 13px;
+      border-radius: 4px;
+      font-family: Georgia, 'Times New Roman', Times, serif;
+    }
+
+    /* Submissions */
+    .submission {
+      background: #fff; border: 1px solid #ddd; border-radius: 4px;
+      padding: 8px 12px; margin-bottom: 4px;
+    }
+    .submission .sub-name { font-weight: 600; }
+    .submission .sub-desc { color: #555; }
+    .submission .sub-meta { font-size: 12px; color: #888; margin-top: 4px; }
+    .submission .sub-actions { margin-top: 8px; display: flex; gap: 6px; }
+    .empty { color: #888; font-style: italic; padding: 12px 0; }
+  </style>
+</head>
+<body>
+  <!-- Password gate -->
+  <div id="auth-gate" style="display:flex;align-items:center;justify-content:center;height:100vh;">
+    <form id="auth-form" style="text-align:center;" onsubmit="return checkPassword()">
+      <h1 style="margin-bottom:12px;">Admin Panel</h1>
+      <input id="auth-pw" type="password" placeholder="Password" autofocus
+        style="border:1px solid #333;padding:6px 14px;font-size:14px;border-radius:4px;width:220px;">
+      <button type="submit" style="margin-left:6px;border:1px solid #333;background:#fff;padding:6px 14px;font-size:14px;border-radius:4px;cursor:pointer;">Enter</button>
+      <p id="auth-error" style="color:#cc0000;margin-top:8px;font-size:13px;display:none;">Wrong password</p>
+    </form>
+  </div>
+
+  <div id="admin-content" style="display:none;">
+  <h1>Admin Panel</h1>
+  <p style="color:#666;margin-bottom:6px;font-size:13px;">Edit lines directly. Select text and click <b>Link</b> to add hyperlinks. Drag to reorder. Hit Deploy when done.</p>
+
+  <div class="top-bar">
+    <button class="deploy" onclick="deployJSON()">Deploy</button>
+    <button onclick="downloadJSON()">Download JSON</button>
+    <button onclick="document.getElementById('file-input').click()">Reload JSON</button>
+    <input type="file" id="file-input" accept=".json" style="display:none">
+    <span class="count" id="person-count"></span>
+    <span id="deploy-status"></span>
+  </div>
+
+  <h2>People <span class="count" id="person-count2"></span></h2>
+  <ul id="people-list"></ul>
+
+  <div id="add-row" style="margin-top:6px;margin-bottom:12px;">
+    <input id="add-input" placeholder="Type new entry, e.g.: Max Mustermann, CEO at Company X" onkeydown="if(event.key==='Enter') addPerson()">
+    <button onclick="addPerson()">+ Add</button>
+  </div>
+
+  <h2>Submissions <span class="count" id="sub-count"></span></h2>
+  <div id="submissions"></div>
+
+  <!-- Link toolbar (floating) -->
+  <div class="link-toolbar" id="link-toolbar">
+    <input id="link-url" placeholder="https://..." onkeydown="if(event.key==='Enter') applyLink()">
+    <button class="link-btn" onclick="applyLink()">Apply</button>
+    <button class="unlink-btn" onclick="removeLink()">Unlink</button>
+    <button class="small" onclick="hideToolbar()">✕</button>
+  </div>
+
+  </div><!-- /admin-content -->
+
+  <script>
+    const API_URL = 'https://germans-api.hainzljoel.workers.dev';
+    const ADMIN_SECRET = 'germans-fyi-admin-2024';
+
+    let people = [
+      "==Founders==",
+      "<a href=\"https://en.wikipedia.org/wiki/Peter_Thiel\" target=\"_blank\">Peter Thiel</a>, Co-Founder PayPal, Palantir, Founders Fund, first outside investor in Facebook",
+      "<a href=\"https://en.wikipedia.org/wiki/Andy_Bechtolsheim\" target=\"_blank\">Andy Bechtolsheim</a>, Co-Founder Sun Microsystems, first Google investor, Founder Arista Networks",
+      "<a href=\"https://www.linkedin.com/in/sebastian-thrun-59a0b273/\" target=\"_blank\">Sebastian Thrun</a>, Founder Waymo, Google X, Udacity, Kitty Hawk, Stanford Professor",
+      "<a href=\"https://www.linkedin.com/in/florianleibert\" target=\"_blank\">Florian Leibert</a>, Co-Founder Mesosphere/D2iQ (acq. Nutanix), Co-Founder 468 Capital",
+      "<a href=\"https://www.linkedin.com/in/tobiasknaup/\" target=\"_blank\">Tobias Knaup</a>, Co-Founder D2iQ (fka Mesosphere), TU Munich, ex-Airbnb",
+      "<a href=\"https://www.linkedin.com/in/anna-julia-storch/\" target=\"_blank\">Anna-Julia Storch</a>, <a href=\"https://www.linkedin.com/in/leonie-freisinger/\" target=\"_blank\">Leonie Freisinger</a>, Co-Founders Dryft, Stanford, backed by General Catalyst",
+      "==Operators==",
+      "<a href=\"https://www.linkedin.com/in/jensmeggers/\" target=\"_blank\">Jens Meggers</a>, SVP & GM Cloud Collaboration at Cisco, PhD RWTH Aachen",
+      "<a href=\"https://plagemann.net/\" target=\"_blank\">Christian Plagemann</a>, Director Google AI/Research, Co-Founded Google VR & Daydream, ex-VP Udacity",
+      "==Investors==",
+      "<a href=\"https://www.linkedin.com/in/peterthiel/\" target=\"_blank\">Peter Thiel</a>, Managing Partner Founders Fund (~$17B AuM), Thiel Capital",
+      "==Academics==",
+      "<a href=\"https://profiles.stanford.edu/thomas-sudhof\" target=\"_blank\">Thomas Südhof</a>, Stanford Professor, Nobel Prize in Medicine 2013",
+      "<a href=\"https://physics.berkeley.edu/people/faculty/reinhard-genzel\" target=\"_blank\">Reinhard Genzel</a>, UC Berkeley Professor Emeritus, Nobel Prize in Physics 2020",
+      "<a href=\"https://www.linkedin.com/in/bernd-girod/\" target=\"_blank\">Bernd Girod</a>, Stanford Professor EE Emeritus, IEEE Fellow, NAE Member, co-founded Polycom",
+      "<a href=\"https://chemistry.berkeley.edu/faculty/chem/fischer\" target=\"_blank\">Felix Fischer</a>, UC Berkeley Professor of Chemistry, Leopoldina Fellow",
+      "==Other=="
+    ];
+
+    let dragIndex = -1;
+    let savedRange = null;
+    let activeContentEl = null;
+
+    // --- Reload from file ---
+    document.getElementById('file-input').addEventListener('change', (e) => {
+      if (!e.target.files[0]) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          people = JSON.parse(ev.target.result);
+          renderPeople();
+        } catch { alert('Invalid JSON file'); }
+      };
+      reader.readAsText(e.target.files[0]);
+    });
+
+    // --- Init ---
+    function init() {
+      renderPeople();
+      loadSubmissions();
+    }
+
+    // Helper: detect section header markers like "==Founders=="
+    function isSection(str) { return /^==.+==$/.test(str); }
+    function sectionName(str) { return str.replace(/^==|==$/g, ''); }
+
+    // --- Render people list ---
+    function renderPeople() {
+      const ul = document.getElementById('people-list');
+      ul.innerHTML = '';
+      const personCount = people.filter(p => !isSection(p)).length;
+      document.getElementById('person-count').textContent = `(${personCount})`;
+      document.getElementById('person-count2').textContent = `(${personCount})`;
+
+      let personNum = 0;
+      people.forEach((html, i) => {
+        const li = document.createElement('li');
+        li.draggable = true;
+        li.dataset.index = i;
+
+        if (isSection(html)) {
+          // Render as section header
+          li.className = 'section-header';
+          const label = document.createElement('span');
+          label.className = 'section-label';
+          label.textContent = sectionName(html);
+          li.appendChild(label);
+        } else {
+          // Render as person row
+          personNum++;
+          const num = document.createElement('span');
+          num.className = 'person-number';
+          num.textContent = personNum;
+
+          const handle = document.createElement('span');
+          handle.className = 'drag-handle';
+          handle.title = 'Drag to reorder';
+          handle.innerHTML = '&#9776;';
+
+          const content = document.createElement('div');
+          content.className = 'person-content';
+          content.contentEditable = true;
+          content.innerHTML = html;
+          content.addEventListener('input', () => {
+            people[i] = content.innerHTML;
+          });
+
+          const actions = document.createElement('div');
+          actions.className = 'person-actions';
+          const delBtn = document.createElement('button');
+          delBtn.className = 'small danger';
+          delBtn.textContent = '✕';
+          delBtn.onclick = () => removePerson(i);
+          actions.appendChild(delBtn);
+
+          li.appendChild(num);
+          li.appendChild(handle);
+          li.appendChild(content);
+          li.appendChild(actions);
+        }
+
+        // Drag events (sections and people can both be reordered)
+        li.addEventListener('dragstart', (e) => {
+          dragIndex = i;
+          li.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        li.addEventListener('dragend', () => {
+          li.classList.remove('dragging');
+          document.querySelectorAll('#people-list li').forEach(el => el.classList.remove('drag-over'));
+        });
+        li.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          li.classList.add('drag-over');
+        });
+        li.addEventListener('dragleave', () => li.classList.remove('drag-over'));
+        li.addEventListener('drop', (e) => {
+          e.preventDefault();
+          li.classList.remove('drag-over');
+          if (dragIndex !== i) {
+            const item = people.splice(dragIndex, 1)[0];
+            people.splice(i, 0, item);
+            renderPeople();
+          }
+        });
+
+        ul.appendChild(li);
+      });
+    }
+
+    // --- Link toolbar logic ---
+    let toolbarDebounce = null;
+    document.addEventListener('selectionchange', () => {
+      clearTimeout(toolbarDebounce);
+      toolbarDebounce = setTimeout(handleSelectionChange, 80);
+    });
+
+    function handleSelectionChange() {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
+
+      const node = sel.anchorNode;
+      const contentEl = node?.nodeType === 1
+        ? node.closest('.person-content')
+        : node?.parentElement?.closest('.person-content');
+      if (!contentEl) return;
+
+      savedRange = sel.getRangeAt(0);
+      activeContentEl = contentEl;
+
+      const anchor = getAnchorParent(sel.anchorNode);
+      const urlInput = document.getElementById('link-url');
+      urlInput.value = anchor ? anchor.href : '';
+
+      const rect = savedRange.getBoundingClientRect();
+      const toolbar = document.getElementById('link-toolbar');
+      toolbar.style.top = Math.max(4, rect.top - 44) + 'px';
+      toolbar.style.left = Math.max(8, rect.left) + 'px';
+      toolbar.classList.add('visible');
+      urlInput.focus();
+      urlInput.select();
+    }
+
+    function getAnchorParent(node) {
+      while (node && node !== document) {
+        if (node.nodeName === 'A') return node;
+        node = node.parentNode;
+      }
+      return null;
+    }
+
+    function applyLink() {
+      const url = document.getElementById('link-url').value.trim();
+      if (!url || !savedRange || !activeContentEl) return;
+
+      activeContentEl.focus();
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+
+      const anchor = getAnchorParent(savedRange.startContainer);
+      if (anchor) {
+        anchor.href = url;
+        anchor.target = '_blank';
+      } else {
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.appendChild(savedRange.extractContents());
+        savedRange.insertNode(a);
+      }
+
+      const idx = activeContentEl.closest('li').dataset.index;
+      people[idx] = activeContentEl.innerHTML;
+
+      hideToolbar();
+    }
+
+    function removeLink() {
+      if (!savedRange || !activeContentEl) return;
+      const anchor = getAnchorParent(savedRange.startContainer);
+      if (anchor) {
+        const text = document.createTextNode(anchor.textContent);
+        anchor.parentNode.replaceChild(text, anchor);
+        const idx = activeContentEl.closest('li').dataset.index;
+        people[idx] = activeContentEl.innerHTML;
+      }
+      hideToolbar();
+    }
+
+    function hideToolbar() {
+      document.getElementById('link-toolbar').classList.remove('visible');
+      savedRange = null;
+    }
+
+    document.addEventListener('mousedown', (e) => {
+      const toolbar = document.getElementById('link-toolbar');
+      if (toolbar.contains(e.target)) return;
+      if (!e.target.closest('.person-content')) {
+        hideToolbar();
+      }
+    });
+
+    // --- Add person ---
+    function addPerson() {
+      const input = document.getElementById('add-input');
+      const text = input.value.trim();
+      if (!text) return;
+      people.push(text);
+      input.value = '';
+      renderPeople();
+      const ul = document.getElementById('people-list');
+      ul.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // --- Remove person ---
+    function removePerson(i) {
+      const text = people[i].replace(/<[^>]+>/g, '');
+      const name = text.split(',')[0].trim();
+      if (!confirm(`Remove "${name}"?`)) return;
+      people.splice(i, 1);
+      renderPeople();
+    }
+
+    // --- Deploy ---
+    async function deployJSON() {
+      syncFromDOM();
+      const status = document.getElementById('deploy-status');
+      status.textContent = 'Deploying...';
+      status.className = 'info';
+      status.style.display = 'inline-block';
+      try {
+        const res = await fetch(`${API_URL}/deploy?secret=${ADMIN_SECRET}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(people),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          status.textContent = '✓ ' + data.message;
+          status.className = 'success';
+        } else {
+          status.textContent = '✗ ' + (data.error || 'Deploy failed');
+          status.className = 'error';
+        }
+      } catch (e) {
+        status.textContent = '✗ Could not reach server';
+        status.className = 'error';
+      }
+    }
+
+    // --- Download JSON (manual backup) ---
+    function downloadJSON() {
+      syncFromDOM();
+      const blob = new Blob([JSON.stringify(people, null, 2) + '\n'], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'people.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function decodeEntities(html) {
+      return html.replace(/&amp;/g, '&').replace(/&gt;/g, '>');
+    }
+
+    function syncFromDOM() {
+      const lis = document.querySelectorAll('#people-list li');
+      people = Array.from(lis).map(li => {
+        if (li.classList.contains('section-header')) {
+          return '==' + li.querySelector('.section-label').textContent + '==';
+        }
+        return decodeEntities(li.querySelector('.person-content').innerHTML);
+      });
+    }
+
+    // --- Submissions from Cloudflare Worker ---
+    async function loadSubmissions() {
+      const container = document.getElementById('submissions');
+      try {
+        const res = await fetch(`${API_URL}/submissions?secret=${ADMIN_SECRET}`);
+        if (!res.ok) {
+          container.innerHTML = '<p class="empty">Could not load submissions.</p>';
+          document.getElementById('sub-count').textContent = '';
+          return;
+        }
+        const data = await res.json();
+        document.getElementById('sub-count').textContent = `(${data.length})`;
+        if (!data.length) {
+          container.innerHTML = '<p class="empty">No pending submissions.</p>';
+          return;
+        }
+        container.innerHTML = '';
+        data.forEach(s => {
+          const div = document.createElement('div');
+          div.className = 'submission';
+
+          const nameDiv = document.createElement('div');
+          nameDiv.className = 'sub-name';
+          nameDiv.textContent = s.name;
+
+          const descDiv = document.createElement('div');
+          descDiv.className = 'sub-desc';
+          descDiv.textContent = s.description;
+
+          const metaDiv = document.createElement('div');
+          metaDiv.className = 'sub-meta';
+          metaDiv.innerHTML = (s.submitter_email ? `From: ${esc(s.submitter_email)} &middot; ` : '') + new Date(s.created_at).toLocaleDateString();
+
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'sub-actions';
+
+          const approveBtn = document.createElement('button');
+          approveBtn.className = 'small';
+          approveBtn.textContent = '+ Add to list';
+          approveBtn.onclick = () => approveSubmission(s.id, s.name, s.description, s.link);
+
+          const dismissBtn = document.createElement('button');
+          dismissBtn.className = 'small danger';
+          dismissBtn.textContent = 'Dismiss';
+          dismissBtn.onclick = () => dismissSubmission(s.id, div);
+
+          actionsDiv.appendChild(approveBtn);
+          actionsDiv.appendChild(dismissBtn);
+
+          div.appendChild(nameDiv);
+          div.appendChild(descDiv);
+          if (s.link) {
+            const linkDiv = document.createElement('div');
+            linkDiv.style.cssText = 'font-size:12px;color:#0066ff;';
+            linkDiv.innerHTML = `<a href="${esc(s.link)}" target="_blank">${esc(s.link)}</a>`;
+            div.appendChild(linkDiv);
+          }
+          div.appendChild(metaDiv);
+          div.appendChild(actionsDiv);
+
+          container.appendChild(div);
+        });
+      } catch {
+        container.innerHTML = '<p class="empty">Could not load submissions.</p>';
+      }
+    }
+
+    function approveSubmission(subId, name, desc, link) {
+      let html = name;
+      if (link) {
+        html = `<a href="${link}" target="_blank">${name}</a>`;
+      }
+      html += `, ${desc}`;
+      people.push(html);
+      renderPeople();
+      fetch(`${API_URL}/submissions/delete?secret=${ADMIN_SECRET}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: subId }),
+      }).then(() => loadSubmissions());
+    }
+
+    async function dismissSubmission(subId, el) {
+      if (!confirm('Dismiss this submission?')) return;
+      await fetch(`${API_URL}/submissions/delete?secret=${ADMIN_SECRET}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: subId }),
+      });
+      el.remove();
+      loadSubmissions();
+    }
+
+    function esc(s) {
+      if (!s) return '';
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    // Only init if already authenticated (sessionStorage)
+    if (sessionStorage.getItem('admin_auth_de') === '1') {
+      unlockAdmin();
+    }
+
+    function checkPassword() {
+      const pw = document.getElementById('auth-pw').value;
+      if (pw === 'wienerschnitzel!') {
+        sessionStorage.setItem('admin_auth_de', '1');
+        unlockAdmin();
+      } else {
+        document.getElementById('auth-error').style.display = 'block';
+      }
+      return false;
+    }
+
+    function unlockAdmin() {
+      document.getElementById('auth-gate').style.display = 'none';
+      document.getElementById('admin-content').style.display = 'block';
+      init();
+    }
+  </script>
+</body>
+</html>

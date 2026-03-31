@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
+  <title>Germans in the Valley</title>
+  <meta name="description" content="A curated list of Germans with deep roots in the Bay Area">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Germans in the Valley">
+  <meta property="og:description" content="A curated list of Germans with deep roots in the Bay Area">
+  <meta name="twitter:title" content="Germans in the Valley">
+  <meta name="twitter:description" content="A curated list of Germans with deep roots in the Bay Area">
+  <meta name="twitter:card" content="summary_large_image">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: #000;
+      background: #fff;
+    }
+    main {
+      max-width: 650px;
+      margin: 0 auto;
+      padding: 64px 20px;
+    }
+    h2 { font-size: 1.25rem; font-weight: bold; margin-bottom: 16px; }
+    h3 { font-size: 1.05rem; font-weight: bold; margin: 20px 0 6px; }
+    h3:first-of-type { margin-top: 8px; }
+    ul { list-style: disc; padding-left: 20px; margin: 0 0 0; }
+    li { margin-bottom: 2px; }
+    a { color: #0000f0; }
+    a:visited { color: #0000f0; }
+    hr { border: none; border-top: 1px solid #000; margin: 24px 0; }
+    @media (max-width: 600px) {
+      body { font-size: 13px; }
+      main { padding: 24px 14px; }
+      h2 { font-size: 1rem; margin-bottom: 10px; }
+      li { margin-bottom: 1px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h2>Germans in the Valley</h2>
+    <ul>
+      <li>A curated list of Germans with deep roots in the Bay Area</li>
+      <li>Founders, engineers, investors, researchers...</li>
+      <li>Know someone who's missing? <a href="vorschlagen.html">Suggest</a></li>
+    </ul>
+    <hr>
+    <div id="people-container"></div>
+    <hr>
+  </main>
+  <script>
+    fetch('people.json')
+      .then(r => r.json())
+      .then(people => {
+        const container = document.getElementById('people-container');
+        let ul = null;
+        people.forEach(html => {
+          const sectionMatch = html.match(/^==(.+)==$/);
+          if (sectionMatch) {
+            const h3 = document.createElement('h3');
+            h3.textContent = sectionMatch[1];
+            container.appendChild(h3);
+            ul = document.createElement('ul');
+            container.appendChild(ul);
+          } else {
+            if (!ul) {
+              ul = document.createElement('ul');
+              container.appendChild(ul);
+            }
+            const li = document.createElement('li');
+            li.innerHTML = html;
+            ul.appendChild(li);
+          }
+        });
+      });
+  </script>
+</body>
+</html>
