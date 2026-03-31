@@ -201,7 +201,7 @@
     <input id="link-url" placeholder="https://..." onkeydown="if(event.key==='Enter') applyLink()">
     <button class="link-btn" onclick="applyLink()">Apply</button>
     <button class="unlink-btn" onclick="removeLink()">Unlink</button>
-    <button class="small" onclick="hideToolbar()">✕</button>
+    <button class="small" onclick="hideToolbar()">â</button>
   </div>
 
   </div><!-- /admin-content -->
@@ -303,7 +303,7 @@
           actions.className = 'person-actions';
           const delBtn = document.createElement('button');
           delBtn.className = 'small danger';
-          delBtn.textContent = '✕';
+          delBtn.textContent = 'â';
           delBtn.onclick = () => removePerson(i);
           actions.appendChild(delBtn);
 
@@ -472,14 +472,14 @@
         });
         const data = await res.json();
         if (res.ok) {
-          status.textContent = '✓ ' + data.message;
+          status.textContent = 'â ' + data.message;
           status.className = 'success';
         } else {
-          status.textContent = '✗ ' + (data.error || 'Deploy failed');
+          status.textContent = 'â ' + (data.error || 'Deploy failed');
           status.className = 'error';
         }
       } catch (e) {
-        status.textContent = '✗ Could not reach server';
+        status.textContent = 'â Could not reach server';
         status.className = 'error';
       }
     }
